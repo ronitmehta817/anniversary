@@ -26,7 +26,7 @@ title: The Beginning
 date: 2025-08-29
 locations: The places where it began
 caption: The day a quiet conversation changed the shape of everything.
-images: wide-scene.heic, tall-portrait.jpg
+images: 68b1c4b12e6c5dcf2198d024.jpeg, IMG_3987.HEIC, 68b1c47f73896e927bacdafc.jpg
 published: true
 ---
 We did not need a grand beginning. It was simply us, speaking honestly in a quiet moment, and suddenly the future had a name: ours. August 29th became the first page we would keep returning to.
@@ -55,8 +55,8 @@ title: Small Adventures
 date: 2025-12-06
 locations: A little beyond the usual
 caption: Nothing far away—just far enough to feel like an adventure.
-images:
-orientations: landscape, portrait
+images: WhatsAppImage2026-05-21at1.11.01AM.jpeg
+orientations: 
 published: true
 ---
 We learned that a day did not have to be spectacular to become unforgettable. A new turn, a shared meal, a place we had never stopped before—small outings felt larger because we were discovering them side by side.
