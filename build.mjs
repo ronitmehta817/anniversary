@@ -23,7 +23,9 @@ const password = process.env.PASSWORD || "august29";
 const passwordHint =
   process.env.PASSWORD_HINT || "The date our story became ours.";
 
-const supportedExts = /\.(jpe?g|png|webp|heic|heif|avif)$/i;
+/* Photos (still + animated GIFs) and short videos (mp4/webm/mov/m4v).
+   The runtime picks <img> vs <video> based on the file extension. */
+const supportedExts = /\.(jpe?g|png|webp|heic|heif|avif|gif|mp4|webm|mov|m4v)$/i;
 
 /* ------------------------------------------------------------------ *
  * Front-matter parser (shared for both `site` and `chapter` blocks)  *
@@ -111,7 +113,7 @@ function validateChapter(chapter, label, previousDate) {
   for (const filename of images) {
     if (!supportedExts.test(filename)) {
       throw new Error(
-        `${label}: "${filename}" is not a supported image type (jpg, jpeg, png, webp, heic, heif, avif)`,
+        `${label}: "${filename}" is not a supported media type (photos: jpg, jpeg, png, webp, avif, heic, heif, gif — videos: mp4, webm, mov, m4v)`,
       );
     }
   }

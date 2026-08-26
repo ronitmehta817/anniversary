@@ -140,7 +140,6 @@ input:focus-visible {
   margin-right: 0.45rem;
   border-radius: 50%;
   background: var(--amber);
-  box-shadow: 0 0 0.9rem rgba(216, 160, 99, 0.72);
   animation: statusPulse 2.6s ease-in-out infinite;
 }
 
@@ -936,7 +935,9 @@ input:focus-visible {
 }
 
 .preview-capture .is-preview-target .memory-frame img,
-.preview-capture .is-preview-target .finale-photo img {
+.preview-capture .is-preview-target .memory-frame video,
+.preview-capture .is-preview-target .finale-photo img,
+.preview-capture .is-preview-target .finale-photo video {
   transform: none;
 }
 
@@ -1158,7 +1159,9 @@ input:focus-visible {
 }
 
 .memory-frame img,
-.finale-photo img {
+.memory-frame video,
+.finale-photo img,
+.finale-photo video {
   display: block;
   width: 100%;
   height: 100%;
@@ -1191,7 +1194,9 @@ input:focus-visible {
 }
 
 .memory-frame.is-loaded img,
-.finale-photo.is-loaded img {
+.memory-frame.is-loaded video,
+.finale-photo.is-loaded img,
+.finale-photo.is-loaded video {
   opacity: 1;
 }
 
@@ -1685,7 +1690,6 @@ input:focus-visible {
   height: 0.42rem;
   border-radius: 50%;
   background: var(--amber);
-  box-shadow: 0 0 1.2rem rgba(216, 160, 99, 0.7);
 }
 
 .unfinished-orbit span:nth-child(1) {
@@ -2245,7 +2249,9 @@ input:focus-visible {
   }
 
   .memory-frame img,
-  .finale-photo img {
+  .memory-frame video,
+  .finale-photo img,
+  .finale-photo video {
     transform: none !important;
   }
 
@@ -2494,7 +2500,9 @@ input:focus-visible {
   }
 
   .memory-frame img,
-  .finale-photo img {
+  .memory-frame video,
+  .finale-photo img,
+  .finale-photo video {
     filter: saturate(0.9) contrast(1.05) !important;
     transform: scale(1.02) !important;
   }
@@ -2701,7 +2709,7 @@ input:focus-visible {
     <script>
 /*__JOURNEY_DATA_BEGIN__*/
 window.JOURNEY_DATA = {
-  "generatedAt": "2026-08-26T18:31:52.721Z",
+  "generatedAt": "2026-08-26T18:31:27.852Z",
   "passwordHash": "a582a974aaf0016bec5a1b0d4eef32edf89baf42d43ca368446da4d7b711f99e",
   "passwordHint": "The date our story became ours.",
   "site": {
@@ -2734,13 +2742,11 @@ window.JOURNEY_DATA = {
       "body": "We did not need a grand beginning. It was simply us, speaking honestly in a quiet moment, and suddenly the future had a name: ours. August 29th became the first page we would keep returning to.",
       "orientations": [
         "auto",
-        "auto",
         "auto"
       ],
       "images": [
-        "photos/the-beginning/68b1c4b12e6c5dcf2198d024.jpeg",
-        "photos/the-beginning/IMG_3987.HEIC",
-        "photos/the-beginning/68b1c47f73896e927bacdafc.jpg"
+        "photos/the-beginning/wide-scene.heic",
+        "photos/the-beginning/tall-portrait.jpg"
       ],
       "placeholder": false,
       "published": true
@@ -2775,12 +2781,11 @@ window.JOURNEY_DATA = {
       "caption": "Nothing far away—just far enough to feel like an adventure.",
       "body": "We learned that a day did not have to be spectacular to become unforgettable. A new turn, a shared meal, a place we had never stopped before—small outings felt larger because we were discovering them side by side.",
       "orientations": [
-        "auto"
+        "landscape",
+        "portrait"
       ],
-      "images": [
-        "photos/small-adventures/WhatsAppImage2026-05-21at1.11.01AM.jpeg"
-      ],
-      "placeholder": false,
+      "images": [],
+      "placeholder": true,
       "published": true
     },
     {
@@ -3121,35 +3126,73 @@ window.JOURNEY_DATA = {
   }
 
   function realImageMarkup(src, orientation, index, label) {
-    /* Two-stage load for iOS photos: HEIC/HEIF files ship without a src
-       attribute (same pattern the placeholderImageMarkup uses for the
-       canvas-generated demo art) so the browser never tries to render a
-       format it can't decode. The runtime hydrator fetches the file,
-       converts it to JPEG with HeicTo, and only then assigns the blob URL
-       as the img's src. Non-HEIC formats set the src inline as usual so
-       the browser can start fetching immediately. */
+    // Renders one memory frame containing a photo, an animated GIF, or a
+    // short muted video, depending on the file extension.
+    // - HEIC/HEIF ships as an empty figure element (no media child) because
+    //   most browsers can't decode it natively. The runtime hydrator
+    //   fetches the file, converts to JPEG via HeicTo, then injects the
+    //   picture element with the decoded blob URL.
+    // - Videos (mp4/webm/mov/m4v) render as an autoplaying, muted, looped
+    //   video element with playsinline — no audio, no controls.
+    // - Everything else (jpg/png/webp/avif/gif) renders as a plain picture
+    //   element with the src set inline so the browser starts fetching
+    //   immediately.
     const isHeic = /\.(heic|heif)$/i.test(src);
-    const inlineSrc = isHeic ? "" : `src="${escapeHtml(src)}"`;
-    /* Orientation class is a hint only — the runtime hydrator will
-       replace it with the actual portrait/landscape/square label derived
-       from the decoded image's natural dimensions. */
+    const isVideo = /\.(mp4|webm|mov|m4v)$/i.test(src);
+    // Orientation class is a hint only — the runtime hydrator will
+    // replace it with the actual portrait/landscape/square label derived
+    // from the loaded media's natural dimensions.
     const orientClass = orientation === "auto" ? "" : `memory-frame--${escapeHtml(orientation)}`;
+    const kindLabel = isVideo ? "VID" : "IMG";
+    const chrome = `
+      <div class="memory-frame__chrome" aria-hidden="true">
+        <span>${kindLabel}_${String(index + 1).padStart(4, "0")}</span>
+        <span data-frame-ratio>${orientation === "portrait" ? "3:4" : orientation === "landscape" ? "4:3" : "···"}</span>
+      </div>`;
+    const focusBracket = `<span class="focus-bracket" aria-hidden="true"></span>`;
+    const frameAttrs = `data-src="${escapeHtml(src)}" data-label="${escapeHtml(label)}"`;
+
+    if (isVideo) {
+      return `
+        <figure class="memory-frame ${orientClass} memory-frame--${index + 1}" ${frameAttrs} data-kind="video">
+          ${chrome}
+          <video
+            src="${escapeHtml(src)}"
+            class="real-memory real-memory--video"
+            muted
+            autoplay
+            loop
+            playsinline
+            preload="metadata"
+            disablepictureinpicture
+            aria-label="${escapeHtml(label)}"
+          ></video>
+          ${focusBracket}
+        </figure>`;
+    }
+
+    if (isHeic) {
+      // Deliberately no media child here — the hydrator creates one after
+      // HeicTo finishes decoding. The frame carries the source on a data
+      // attribute so the hydrator can find it.
+      return `
+        <figure class="memory-frame ${orientClass} memory-frame--${index + 1}" ${frameAttrs} data-kind="heic">
+          ${chrome}
+          ${focusBracket}
+        </figure>`;
+    }
 
     return `
-      <figure class="memory-frame ${orientClass} memory-frame--${index + 1}">
-        <div class="memory-frame__chrome" aria-hidden="true">
-          <span>IMG_${String(index + 1).padStart(4, "0")}</span>
-          <span data-frame-ratio>${orientation === "portrait" ? "3:4" : orientation === "landscape" ? "4:3" : "···"}</span>
-        </div>
+      <figure class="memory-frame ${orientClass} memory-frame--${index + 1}" ${frameAttrs} data-kind="image">
+        ${chrome}
         <img
-          ${inlineSrc}
-          data-src="${escapeHtml(src)}"
+          src="${escapeHtml(src)}"
           class="real-memory"
           alt="${escapeHtml(label)}"
           decoding="async"
           ${index === 0 ? 'fetchpriority="high"' : 'loading="lazy"'}
         >
-        <span class="focus-bracket" aria-hidden="true"></span>
+        ${focusBracket}
       </figure>`;
   }
 
@@ -3703,14 +3746,15 @@ window.JOURNEY_DATA = {
    * Real-photo hydrator (iOS HEIC/HEIF + aspect-ratio detection)      *
    * ------------------------------------------------------------------ */
 
-  /* Read the loaded image's natural dimensions and reflect them onto the
+  /* Read the loaded media's natural dimensions and reflect them onto the
      frame so the CSS can use them: --photo-aspect drives the frame's
      aspect-ratio, and the portrait/landscape/square class swaps the
      positioning preset. Also updates the little chrome label in the top
-     corner (e.g. "3:2") for a bit of camera-HUD flavor. */
-  function applyAspectFromImage(image, frame) {
-    const w = image.naturalWidth;
-    const h = image.naturalHeight;
+     corner (e.g. "3:2") for a bit of camera-HUD flavor. Works for both
+     img (naturalWidth/Height) and video (videoWidth/Height) elements. */
+  function applyAspectFromMedia(mediaEl, frame) {
+    const w = mediaEl.naturalWidth || mediaEl.videoWidth || 0;
+    const h = mediaEl.naturalHeight || mediaEl.videoHeight || 0;
     if (!w || !h) return;
     const aspect = w / h;
     frame.style.setProperty("--photo-aspect", aspect.toFixed(4));
@@ -3726,6 +3770,8 @@ window.JOURNEY_DATA = {
     const ratioLabel = frame.querySelector("[data-frame-ratio]");
     if (ratioLabel) ratioLabel.textContent = simplifyRatio(w, h);
   }
+  /* Kept as a thin alias so the random-placeholder path still compiles. */
+  const applyAspectFromImage = applyAspectFromMedia;
 
   function simplifyRatio(w, h) {
     const gcd = (a, b) => (b === 0 ? a : gcd(b, a % b));
@@ -3753,11 +3799,13 @@ window.JOURNEY_DATA = {
   }
 
   /* Decode HEIC/HEIF using the browser-side HeicTo library (vendored at
-     vendor/heic-to.min.js). The library exposes a global HeicTo function
-     that accepts a Blob and returns a converted Blob. We turn the
-     converted blob into an object URL and assign it as the img's src. */
-  async function decodeHeic(image) {
-    const rawSrc = image.dataset.src;
+     heic-to.min.js). The library exposes a global HeicTo function that
+     accepts a Blob and returns a converted JPEG Blob. We build a fresh
+     picture element, set its src to a blob URL, and inject it into the
+     frame — no empty-src placeholder ever ships in the initial markup. */
+  async function decodeHeicIntoFrame(frame) {
+    const rawSrc = frame.dataset.src;
+    const label = frame.dataset.label || "";
     if (!rawSrc) return;
     if (typeof window.HeicTo !== "function") {
       console.warn("HeicTo not loaded — cannot decode", rawSrc);
@@ -3772,39 +3820,72 @@ window.JOURNEY_DATA = {
         type: "image/jpeg",
         quality: 0.85,
       });
-      image.src = URL.createObjectURL(jpegBlob);
+      injectImage(frame, URL.createObjectURL(jpegBlob), label);
     } catch (error) {
       console.warn(`Failed to decode HEIC ${rawSrc}:`, error);
-      /* Fall back to a canvas-generated placeholder so the frame isn't
-         empty. Uses a stable seed derived from the filename so the
-         placeholder is consistent between reloads. */
+      // Fall back to canvas-generated art so the frame isn't empty. Uses
+      // a stable seed derived from the filename for reload consistency.
       const seed = [...rawSrc].reduce((acc, ch) => acc + ch.charCodeAt(0), 0) % 500;
-      image.src = createRandomMemory(seed, "landscape");
+      injectImage(frame, createRandomMemory(seed, "landscape"), label);
     }
   }
 
+  /* Programmatically build a picture element inside the frame. Runs the
+     same load pipeline as inline picture elements — sets is-loaded and
+     applies the aspect ratio once the media reports its dimensions. */
+  function injectImage(frame, src, label) {
+    const media = document.createElement("img");
+    media.className = "real-memory";
+    media.decoding = "async";
+    media.alt = label;
+    media.addEventListener(
+      "load",
+      () => {
+        frame.classList.add("is-loaded");
+        applyAspectFromMedia(media, frame);
+      },
+      { once: true },
+    );
+    media.src = src;
+    // Insert before the focus-bracket so it renders behind the corner overlay.
+    const bracket = frame.querySelector(".focus-bracket");
+    if (bracket) frame.insertBefore(media, bracket);
+    else frame.appendChild(media);
+  }
+
+  /* Wires every real memory frame — plain image, video, or deferred HEIC.
+     Called once at boot after the story markup exists. */
   function hydrateRealImages() {
-    const images = [...document.querySelectorAll(".real-memory")];
+    for (const frame of document.querySelectorAll(".memory-frame[data-kind], .finale-photo[data-kind]")) {
+      const kind = frame.dataset.kind;
 
-    for (const image of images) {
-      const frame = image.closest(".memory-frame, .finale-photo");
-
-      /* Attach a shared load handler that runs whether the src was set
-         inline (normal formats) or later by decodeHeic (HEIC/HEIF). */
-      const onLoad = () => {
-        if (frame) {
-          frame.classList.add("is-loaded");
-          applyAspectFromImage(image, frame);
-        }
-      };
-      if (image.complete && image.naturalWidth > 0) {
-        onLoad();
-      } else {
-        image.addEventListener("load", onLoad, { once: true });
+      if (kind === "heic") {
+        decodeHeicIntoFrame(frame);
+        continue;
       }
 
-      if (image.dataset.src && /\.(heic|heif)$/i.test(image.dataset.src) && !image.src) {
-        decodeHeic(image);
+      const media = frame.querySelector("img.real-memory, video.real-memory");
+      if (!media) continue;
+
+      const onReady = () => {
+        frame.classList.add("is-loaded");
+        applyAspectFromMedia(media, frame);
+      };
+
+      if (kind === "video") {
+        // <video> reports dimensions on loadedmetadata (much earlier than
+        // canplay), which is all we need for the frame to reshape.
+        if (media.readyState >= 1 /* HAVE_METADATA */ && media.videoWidth) {
+          onReady();
+        } else {
+          media.addEventListener("loadedmetadata", onReady, { once: true });
+        }
+      } else {
+        if (media.complete && media.naturalWidth > 0) {
+          onReady();
+        } else {
+          media.addEventListener("load", onReady, { once: true });
+        }
       }
     }
   }

@@ -115,33 +115,37 @@ photos/
   the-beginning/
     first-date.jpg
     walking-home.heic
+    smile-loop.mp4        ← short video, ~3 seconds
+    fireworks.gif         ← animated GIF
   the-long-way-home/
     road-trip.jpg
     sunset.heic
 ```
 
-2. List those filenames in the chapter's `images:` field:
+2. List those filenames in the chapter's `images:` field (the `images` key is the same slot for photos, GIFs, and short videos — they mix freely):
 
 ```markdown
 ---
 type: chapter
 id: the-beginning
 ...
-images: first-date.jpg, walking-home.heic
+images: first-date.jpg, smile-loop.mp4, walking-home.heic
 ---
 ```
 
-(No `orientations:` line needed — the frames re-shape to the actual photo aspect at load time.)
+(No `orientations:` line needed — the frames re-shape to each file's actual aspect ratio at load time.)
 
 3. Run `node build.mjs`. It validates every listed file exists in `photos/<id>/` and embeds the paths into `index.html`.
 
 If a photo is missing, the build prints a warning and that chapter falls back to generated placeholder art — it won't break the site.
 
-**Photo tips:**
-- Supported formats: `.jpg`, `.jpeg`, `.png`, `.webp`, `.avif`, and iOS `.heic` / `.heif`.
+**Media tips:**
+- Photos: `.jpg`, `.jpeg`, `.png`, `.webp`, `.avif`, `.gif` (animated), and iOS `.heic` / `.heif`.
+- Videos: `.mp4`, `.webm`, `.mov` (iPhone), `.m4v`. Videos autoplay muted, looped, and inline — no controls, no audio, so they feel like animated stills. Keep them short (a few seconds).
 - HEIC/HEIF from iPhone work out of the box — decoded to JPEG in the browser via the bundled `heic-to.min.js`. No conversion needed.
-- Photo frames auto-adjust to each image's real aspect ratio, so you don't have to declare `portrait` / `landscape`.
-- Resize to ~1600 px on the longest edge for best performance (HEIC files can be 3–5 MB).
+- Frames auto-adjust to each file's real aspect ratio, so you don't have to declare `portrait` / `landscape`.
+- Resize photos to ~1600 px on the longest edge for best performance (HEIC files can be 3–5 MB).
+- For videos, aim for < 8 MB — anything larger will delay first paint.
 - No spaces in filenames (use dashes).
 
 ## Adding a new chapter
